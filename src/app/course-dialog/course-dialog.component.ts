@@ -3,8 +3,8 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import {Course} from "../model/course";
 import {FormBuilder, Validators, FormGroup} from "@angular/forms";
 import * as moment from 'moment';
-import {fromEvent} from 'rxjs';
-import {concatMap, distinctUntilChanged, exhaustMap, filter, mergeMap} from 'rxjs/operators';
+import {from, fromEvent, interval} from 'rxjs';
+import {concatMap, distinctUntilChanged, exhaustMap, filter, finalize, mergeMap} from 'rxjs/operators';
 import {fromPromise} from 'rxjs/internal-compatibility';
 
 @Component({
@@ -39,7 +39,10 @@ export class CourseDialogComponent implements OnInit, AfterViewInit {
 
     ngOnInit() {
 
-
+        // this.form.valueChanges.pipe(
+        //     filter(()=>this.form.valid),
+        //     mergeMap(changes => this.saveCourse(changes))
+        // ).subscribe()
 
     }
 
@@ -47,7 +50,23 @@ export class CourseDialogComponent implements OnInit, AfterViewInit {
 
     ngAfterViewInit() {
 
+       const test= fromEvent(this.saveButton.nativeElement, 'click').pipe(
+            //waits until each click completed and then process the new ones in order : concatMap(changes => this.saveCourse(this.form.value))
+            //exhaust ignores any clicks tha occur while processing the query
+            exhaustMap(()=>  this.saveCourse(this.form.value),
+            )
+        ).subscribe()
 
+    }
+
+    saveCourse(changes){
+        return from(fetch(`api/courses/${this.course.id}`, {
+            method: 'PUT',
+            body: JSON.stringify(changes),
+            headers: {
+                'content-type' : 'application/json'
+            }
+        }))
     }
 
 
